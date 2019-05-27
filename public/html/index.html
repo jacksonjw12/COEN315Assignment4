@@ -1,0 +1,414 @@
+<html>
+
+
+<!-- *
+	#5
+ 	CORS question 
+
+ 	The reason this website can access Bart Data is as follows:
+ 	The browser is only requesting data from its own host, bart.jacksonwheelers.space, so no cors violations happen there
+
+	When the server makes a request to the Bart API, it is acting as an HTTP client, so there are no violations either
+
+	However it is possible to enable CORS access directly from a browser to the BART API, if only the server administrators for bart would enable that.
+	CORS is turned off by default, but it is possible for servers to specify what hosts are permitted to load content from the server
+	An example of a site that has partially enabled CORS is Amazon AWS
+	With the right authentication headers, a browser may directly upload or request data from an AWS resource.
+	A typical example of this is a presigned post, in which the http server has given the http client access to write to a AWS S3 object.
+
+
+*/ -->
+
+
+<head>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="stylesheet" href="/index.css" >
+    <title>Hello, world!</title>
+
+</head>
+
+<body>
+
+	<div style="position:absolute;display:none;" id="visitAlert" class="alert alert-info alert-dismissible fade show" role="alert">
+	  <strong>Welcome back!</strong> Visits: <a id="visitNum"></a>
+	  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+	    <span aria-hidden="true">&times;</span>
+	  </button>
+	</div>
+
+	
+	
+	<div class="container">
+		<h1 class="text-center">Bart System!</h1></br>
+	</div>
+
+	<div class="container col-12">
+
+		<div class="row justify-content-between">
+		<div class="col-5">
+			<div class="row" >
+			    <div class="col-6">
+					<h3 class="text-center">Source</h3>
+					<div class="scrollable contentAligned">
+						<div class="list-group" id="source-station-list">
+					    </div>
+					</div>
+			    </div>
+			    <div class="col-6 ">
+			      <h3 class="text-center">Destination</h3>
+			      	<div class="scrollable contentAligned">
+						<div class="list-group disabledDiv" id="dest-station-list">
+				      
+				    	</div>
+					</div>
+			    </div>
+			</div>
+	    </div>
+
+	    <div class="col-7" >
+	    	
+			<div class="row">
+				
+				<div class="col-6">
+					<div id='transitHeader' class="transitHeader" style="display:none;position:relative;">
+					<h3 style="display:inline-block;" class="text-center"><span id='sourceStationTransitHeader'></span> -> <span id='destStationTransitHeader'></span></h3><!-- <div id="clock" style="position:absolute;left:0;top:-5vh;"></div> -->
+					</div>
+					<div class="scrollable contentAligned" >
+						<div class="border-left border-right border-bottom" style="display:none;" id="transitContentContainer">
+							<div class="row m-0 p-2 pb-3 border-top ">
+								<div class="col-4"><h5>Trip a</h5><p>departs in 2 mins</p></div>
+								<div class="col-8"><p>yo</p><p>yo</p><p>yo</p><p>yo</p></div>
+							</div>
+						</div>
+						
+					</div>
+			    </div>
+			    <div class="col-6" style="display:none;" id="sourceStationInfo">
+			    <!-- Aside has no meaning in this context, and contains only the global html attributes, ive used it only because the assignment requested it -->
+			    <aside>
+			      <h3 id="sourceStationHeader" class="text-center"></h3>
+			      		<div class="scrollable contentAligned border" >
+						<div class="row p-0">
+						  <p class="col-sm-5 text-right">City:</p>
+						  <p class="col-sm-6" id="sourceStation-city"></p>
+
+						</div>
+
+						<div class="row p-0" id="sourceStation-NB-container">
+							<p class="col-sm-5 text-right"  >NorthBound Line(s):</p>
+							<p class="col-sm-6" id="sourceStation-NB"></p>
+						</div>
+						<div class="row p-0" id="sourceStation-NBP-container">
+							<p class="col-sm-5 text-right"  >NorthBound Platform(s):</p>
+							<p class="col-sm-6" id="sourceStation-NBP"></p>
+						</div>
+						  
+						<div class="row p-0" id="sourceStation-SB-container">
+							<p class="col-sm-5 text-right" >SouthBound Line(s):</p>
+							<p class="col-sm-6" id="sourceStation-SB"></p>
+						</div>
+						<div class="row p-0" id="sourceStation-SBP-container">
+							<p class="col-sm-5 text-right" >SouthBound Platform(s):</p>
+							<p class="col-sm-6" id="sourceStation-SBP"></p>
+						</div>
+						  
+						</div>
+						</div>
+
+						 </div>
+						
+						  
+						
+
+						  <!-- <dt class="col-sm-6">SouthBound Lines</dt>
+						  <dd class="col-sm-6">
+						    <p>3</p>
+						    <p>4</p>
+						    <p>5</p>
+						  </dd>
+
+						  <dt class="col-sm-3 text-truncate">Truncated term is truncated</dt>
+						  <dd class="col-sm-9">Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</dd>
+
+						  <dt class="col-sm-3">Nesting</dt>
+						  <dd class="col-sm-9">
+						    <dl class="row">
+						      <dt class="col-sm-4">Nested definition list</dt>
+						      <dd class="col-sm-8">Aenean posuere, tortor sed cursus feugiat, nunc augue blandit nunc.</dd>
+						    </dl>
+						  </dd>
+						</dl> -->
+				</aside>
+			    </div>
+
+
+			</div>
+			
+	    </div>
+	  </div>
+
+
+	</div>
+
+
+	<!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
+	<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<script src="jquery.countdown.min.js"></script>
+
+
+	<script>
+
+
+		let data = {'sourceStation':undefined,'destStation':undefined}
+		let autoUpdatingTransit = false;
+		let stations = []
+
+
+
+
+		
+
+
+		function serverJSONRequest(url, type, callback){
+			$.ajax({
+		        url: url,
+		        type: type,
+		        dataType: 'json', 
+		        success: callback
+		    });
+		}
+		function parseRouteArray(routes){
+			if(routes === undefined){
+				return ""
+			}
+			let str = ""
+			for(route of routes){
+				str += route.substring(6) + ", ";
+			}
+
+			return str.substring(0,str.length-2);
+		}
+		function parsePlatformArray(platforms){
+			if(platforms === undefined){
+				return ""
+			}
+			let str = ""
+			for(platform of platforms){
+				str += platform + ", ";
+			}
+
+			return str.substring(0,str.length-2);
+		}
+
+
+
+		function getTransitInfo(){
+			if(!autoUpdatingTransit){
+				autoUpdatingTransit = true;
+				window.setInterval(getTransitInfo, 30000);
+			}
+			serverJSONRequest('/trips?source='+data.sourceStation +'&dest='+data.destStation,'GET',function(res){
+
+				console.log(res);
+
+				let transitContentContainer = $("#transitContentContainer");
+				transitContentContainer.html("")
+
+				$("#destStationTransitHeader").html(data.destStation);
+
+				$("#sourceStationTransitHeader").html(data.sourceStation);
+
+
+				transitContentContainer.show();
+				$("#transitHeader").show();
+
+				
+				let trips = res.schedule.request.trip;
+				let first = true;
+				let departureTime;
+				for(trip of trips){
+
+					let tripElement = '<div class="row m-0 p-2 pb-3 border-top ">'
+							
+					tripElement += 	'<div class="col-5"><h5>' + trip["@origTimeMin"] + '</h5><p>$' + trip["@fare"] + '</p><p class="font-italic small">' + trip["@tripTime"] + ' mins</p></div>'
+					//legs
+					tripElement += '<div class="col-7">' 
+					if(first){
+						first = false;
+
+						departureTime = trip["@origTimeMin"]
+						if(departureTime.indexOf("PM") > 0){
+							departureTime = (Number(departureTime.substring(0,2)) + 12) + departureTime.substring(2,5)
+						}
+						else{
+							departureTime = departureTime.substring(0,5)
+						}
+						departureTime = trip["@origTimeDate"] + " " + departureTime;
+
+						let departureDate = new Date(departureTime);
+						let currentDate = new Date()
+						let diffM = Math.floor((departureDate - currentDate)/60000);
+
+						
+
+
+						tripElement += '<p class="text-danger">departs in <span id="clock">' + diffM + '</span></p>' 
+					}
+
+					tripElement += '<p >' + trip["@origin"] +'  :  ' + trip["@origTimeMin"]+'</p>' 
+					for(legPiece of trip.leg){
+						
+						tripElement += '<p>' + legPiece["@destination"] +'  :  ' + legPiece["@destTimeMin"]+ '</p>' 
+					}
+
+
+					tripElement += '</div>'
+
+					tripElement += '</div>'
+					transitContentContainer.append(tripElement)
+					$('span#clock').countdown(departureTime,function(event) {
+					    $(this).html(event.strftime('%H:%M:%S'));
+					  });
+
+				}
+
+
+
+				
+
+			});
+		}
+
+
+		function getSourceStationInfo(){
+			serverJSONRequest('/station?station='+data.sourceStation,'GET',function(res){
+				console.log(res);
+				$("#sourceStationHeader").html(res.name);
+				$("#sourceStation-city").html(res.city);
+				if(res.north_routes.route){
+					$("#sourceStation-NB").html(parseRouteArray(res.north_routes.route));
+					$("#sourceStation-NBP").html(parsePlatformArray(res.north_platforms.platform));
+					$("#sourceStation-NB-container").show();
+					$("#sourceStation-NBP-container").show();
+				}
+				else{
+					$("#sourceStation-NB-container").hide();
+					$("#sourceStation-NBP-container").hide();
+				}
+				if(res.south_routes.route){
+					$("#sourceStation-SB").html(parseRouteArray(res.south_routes.route));
+					$("#sourceStation-SBP").html(parsePlatformArray(res.south_platforms.platform));
+					$("#sourceStation-SB-container").show();
+					$("#sourceStation-SBP-container").show();
+				}
+				else{
+					$("#sourceStation-SB-container").hide();
+					$("#sourceStation-SBP-container").hide();
+				}
+
+
+				$("#sourceStationInfo").show();
+			})
+		}
+
+
+
+		$(document).ready(function() {
+
+
+
+			let timesVisited = localStorage.getItem('timesVisited');
+			timesVisited = timesVisited === undefined?0:Number(timesVisited);
+
+			if(timesVisited > 0){
+				console.log(timesVisited)
+				$("#visitNum").html(timesVisited);
+				$("#visitAlert").show();
+			}
+
+
+			localStorage.setItem('timesVisited',timesVisited+1)
+
+    		
+			serverJSONRequest('/stations','GET',function(res){
+				stations = res
+
+				let sourceList = $('#source-station-list');
+				let destList = $('#dest-station-list');
+
+				for(station of stations){
+					let stationListElement =  '<a class="list-group-item list-group-item-action" data-toggle="list" abbr='+ station.abbr+' href> ' + station.name +'</a>';
+					sourceList.append(stationListElement);
+					destList.append(stationListElement);
+				}
+
+				//user selected a source station
+				$('#source-station-list a').on('click', function (e) {
+				  e.preventDefault()
+				  if(data.sourceStation !== undefined){
+				  		$('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').removeClass('disabled');
+
+				  }
+				  data.sourceStation = $(this).attr('abbr')
+				  destList.removeClass('disabledDiv');
+				  $('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').addClass('disabled');
+				  
+				  
+
+
+				  getSourceStationInfo();
+				  
+
+				  if(data.destStation !== undefined){
+				  	getTransitInfo();
+				  }
+
+
+
+				  
+				})
+				$('#dest-station-list a').on('click', function (e) {
+				  e.preventDefault()
+
+				  if(data.destStation !== undefined){
+				  		$('#source-station-list a[abbr="' + data.destStation+ '"] ').removeClass('disabled');
+
+				  }
+				  data.destStation = $(this).attr('abbr');
+
+				  
+
+				  $('#source-station-list a[abbr="' + data.destStation+ '"] ').addClass('disabled');
+
+
+				  getTransitInfo();
+
+				 
+
+
+
+
+				})
+
+
+
+			})
+
+
+
+		});
+
+
+
+
+
+	</script>
+
+
+</body>
+</html>
