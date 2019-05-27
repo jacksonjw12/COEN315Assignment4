@@ -1,40 +1,36 @@
+//Jackson Wheeler 5/27/19 COEN 315 Assignment 4
+//required globals
 
+let data = {'sourceStation':undefined,'destStation':undefined};
+let autoUpdatingTransit = false;//whether source and dest have been picked yet
+let stations = [];//populated by call to /stations
 
-let data = {'sourceStation':undefined,'destStation':undefined}
-let autoUpdatingTransit = false;
-let stations = []
-
-
-let lastMapsPath = {"orig":undefined, "dest":undefined}
+let lastMapsPath = {"orig":undefined, "dest":undefined}//avoid needlessly updating google maps directions
 let mapsInit = false;
 let map;
 let directionsService;
 let directionsDisplay;
+
+
 function initMap(center) {
-	console.log(center)
+	
 	directionsDisplay = new google.maps.DirectionsRenderer;
 	directionsService = new google.maps.DirectionsService;
 	map = new google.maps.Map(document.getElementById('map'), {
 	  zoom: 14,
 	  center: center
-	});//{lat: 37.77, lng: -122.447}
+	});
 	directionsDisplay.setMap(map);
 
 
-	// document.getElementById('mode').addEventListener('change', function() {
-	//   calculateAndDisplayRoute(directionsService, directionsDisplay);
-	// });
 }
 
 function calculateAndDisplayRoute(orig, dest) {
-	console.log("test")
+	
 	var selectedMode = 'TRANSIT';
 	directionsService.route({
-	  origin: orig,  // Haight.{lat: 37.77, lng: -122.447}
-	  destination: dest,  // Ocean Beach. {lat: 37.768, lng: -122.511}
-	  // Note that Javascript allows us to access the constant
-	  // using square brackets and a string value as its
-	  // "property."
+	  origin: orig, 
+	  destination: dest,  
 	  travelMode: google.maps.TravelMode[selectedMode]
 	}, function(response, status) {
 	  if (status == 'OK') {
@@ -50,7 +46,7 @@ function moveMap(center){
 	map.setCenter(center); 
 }
 
-
+//get lat and long from station abbreviation
 //abbr
 //gtfs_latitude
 //gtfs_longitude
@@ -62,8 +58,7 @@ function getLocation(abbr){
 	}
 }
 
-
-
+//ajax helper
 function serverJSONRequest(url, type, callback){
 	$.ajax({
         url: url,
@@ -96,27 +91,25 @@ function parsePlatformArray(platforms){
 }
 
 
-
+//populate the transit information box
 function getTransitInfo(){
 	if(!autoUpdatingTransit){
 		autoUpdatingTransit = true;
 		window.setInterval(getTransitInfo, 30000);
 	}
 	if(data.sourceStation !== lastMapsPath.orig || data.destStation !== lastMapsPath.dest){//google maps
-		calculateAndDisplayRoute(getLocation(data.sourceStation),getLocation(data.destStation))
+		calculateAndDisplayRoute(getLocation(data.sourceStation),getLocation(data.destStation));
 
 
 		lastMapsPath.orig = data.sourceStation;
 		lastMapsPath.dest = data.destStation;
 	}
 
-
+	//request transit info from source to dest, from bart api through server
 	serverJSONRequest('/trips?source='+data.sourceStation +'&dest='+data.destStation,'GET',function(res){
-
-		console.log(res);
-
+		
 		let transitContentContainer = $("#transitContentContainer");
-		transitContentContainer.html("")
+		transitContentContainer.html("");
 
 		$("#destStationTransitHeader").html(data.destStation);
 
@@ -125,83 +118,77 @@ function getTransitInfo(){
 
 		transitContentContainer.show();
 		$("#transitHeader").show();
-
-
-
 		
 		let trips = res.schedule.request.trip;
 		let first = true;
 		let departureTime;
+		//render trips into transit content container
 		for(trip of trips){
 
-			let tripElement = '<div class="row m-0 p-2 pb-3 border-top ">'
+			let tripElement = '<div class="row m-0 p-2 pb-3 border-top ">';
 					
-			tripElement += 	'<div class="col-5"><h5>' + trip["@origTimeMin"] + '</h5><p>$' + trip["@fare"] + '</p><p class="font-italic small">' + trip["@tripTime"] + ' mins</p></div>'
-			//legs
-			tripElement += '<div class="col-7">' 
-			if(first){
+			tripElement += 	'<div class="col-5"><h5>' + trip["@origTimeMin"] + '</h5><p>$' + trip["@fare"] + '</p><p class="font-italic small">' + trip["@tripTime"] + ' mins</p></div>';
+			//legs of trip go in this div
+			tripElement += '<div class="col-7">'; 
+			if(first){//trip that will depart soonest
 				first = false;
 
-				departureTime = trip["@origTimeMin"]
+				//parse departure date from the trip info
+
+				departureTime = trip["@origTimeMin"];
 				if(departureTime.indexOf("PM") > 0){
-					departureTime = (Number(departureTime.substring(0,2)) + 12) + departureTime.substring(2,5)
+					departureTime = (Number(departureTime.substring(0,2)) + 12) + departureTime.substring(2,5);
 				}
 				else{
-					departureTime = departureTime.substring(0,5)
+					departureTime = departureTime.substring(0,5);
 				}
 				departureTime = trip["@origTimeDate"] + " " + departureTime;
 
 				let departureDate = new Date(departureTime);
-				let currentDate = new Date()
+				let currentDate = new Date();
 				let diffM = Math.floor((departureDate - currentDate)/60000);
 
-				
-
-
-				tripElement += '<p class="text-danger">departs in <span id="clock">' + diffM + '</span></p>' 
+				//add the clock element
+				tripElement += '<p class="text-danger">departs in <span id="clock">' + diffM + '</span></p>';
 			}
 
-			tripElement += '<p >' + trip["@origin"] +'  :  ' + trip["@origTimeMin"]+'</p>' 
+			tripElement += '<p >' + trip["@origin"] +'  :  ' + trip["@origTimeMin"]+'</p>';
 			for(legPiece of trip.leg){
-				
-				tripElement += '<p>' + legPiece["@destination"] +'  :  ' + legPiece["@destTimeMin"]+ '</p>' 
+				tripElement += '<p>' + legPiece["@destination"] +'  :  ' + legPiece["@destTimeMin"]+ '</p>';
 			}
 
+			tripElement += '</div>';
 
-			tripElement += '</div>'
+			tripElement += '</div>';
 
-			tripElement += '</div>'
-			transitContentContainer.append(tripElement)
+			transitContentContainer.append(tripElement);
+			//activate the clock element created in the trip that departs soonest
+
 			$('span#clock').countdown(departureTime,function(event) {
 			    $(this).html(event.strftime('%H:%M:%S'));
-			  });
-
+			});
 		}
-
-		//calculateAndDisplayRoute(directionsService, directionsDisplay, trips[0].);
-
-
 		
-
 	});
 }
 
 
-
+//populate the source station info box
 function getSourceStationInfo(){
 
-
+	//if maps arent initialized, start maps, and select source station as the center
 	if(!mapsInit){
 		mapsInit = true;
 		initMap(getLocation(data.sourceStation));
 		
 	}
 	else{
-		moveMap(getLocation(data.sourceStation))
+		//otherwise set the center of the map to the source station
+		moveMap(getLocation(data.sourceStation));
 	}
-
+	//get detailed info about the station from the barts api through our server
 	serverJSONRequest('/station?station='+data.sourceStation,'GET',function(res){
-		console.log(res);
+		
 		$("#sourceStationHeader").html(res.name);
 		$("#sourceStation-city").html(res.city);
 		if(res.north_routes.route){
@@ -231,24 +218,21 @@ function getSourceStationInfo(){
 }
 
 
-
+// "main" 
 $(document).ready(function() {
 
-
-
+	//do pagevisits for Part 3
 	let timesVisited = localStorage.getItem('timesVisited');
 	timesVisited = timesVisited === undefined?0:Number(timesVisited);
 
 	if(timesVisited > 0){
-		console.log(timesVisited)
 		$("#visitNum").html(timesVisited);
 		$("#visitAlert").show();
 	}
 
-
 	localStorage.setItem('timesVisited',timesVisited+1)
 
-	
+	//populate stations array, setup action triggers 
 	serverJSONRequest('/stations','GET',function(res){
 		stations = res
 
@@ -263,58 +247,45 @@ $(document).ready(function() {
 
 		//user selected a source station
 		$('#source-station-list a').on('click', function (e) {
-		  e.preventDefault()
-		  if(data.sourceStation !== undefined){
-		  		$('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').removeClass('disabled');
+			e.preventDefault()
+			if(data.sourceStation !== undefined){
+				$('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').removeClass('disabled');
+			}
+			data.sourceStation = $(this).attr('abbr')
 
-		  }
-		  data.sourceStation = $(this).attr('abbr')
-		  destList.removeClass('disabledDiv');
-		  $('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').addClass('disabled');
-		  
-		  
+			//re-enable destination list
+			destList.removeClass('disabledDiv');
 
+			//disable selection of the source station in the destination list
+			$('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').addClass('disabled');
 
-		  getSourceStationInfo();
-		  
+			getSourceStationInfo();
 
-		  if(data.destStation !== undefined){
-		  	getTransitInfo();
-		  }
+			if(data.destStation !== undefined){
+				getTransitInfo();
+			}
 
-
-
-		  
 		})
+
+
+		//user selected a destination station
 		$('#dest-station-list a').on('click', function (e) {
-		  e.preventDefault()
+			e.preventDefault()
 
-		  if(data.destStation !== undefined){
-		  		$('#source-station-list a[abbr="' + data.destStation+ '"] ').removeClass('disabled');
+			if(data.destStation !== undefined){
+				$('#source-station-list a[abbr="' + data.destStation+ '"] ').removeClass('disabled');
+			}
+			data.destStation = $(this).attr('abbr');
 
-		  }
-		  data.destStation = $(this).attr('abbr');
+			//disable selection of the destination station in the source list
+			$('#source-station-list a[abbr="' + data.destStation+ '"] ').addClass('disabled');
 
-		  
-
-		  $('#source-station-list a[abbr="' + data.destStation+ '"] ').addClass('disabled');
-
-
-		  getTransitInfo();
-
-		 
-
-
-
+			getTransitInfo();
 
 		})
-
 
 
 	})
-
-
-
 });
 
 
