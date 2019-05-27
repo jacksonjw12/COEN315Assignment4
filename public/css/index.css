@@ -27,6 +27,17 @@
 
 
 
+
+
+#map {
+height: 50vh;
+}
+/* Optional: Makes the sample page fill the window. */
+
+
+
+
+
 .bs-callout {
     padding: 20px;
     margin: 20px 0;

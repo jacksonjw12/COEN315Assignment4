@@ -88,26 +88,26 @@
 			    <aside>
 			      <h3 id="sourceStationHeader" class="text-center"></h3>
 			      		<div class="scrollable contentAligned border" >
-						<div class="row p-0">
+						<div class="row p-0 m-0">
 						  <p class="col-sm-5 text-right">City:</p>
 						  <p class="col-sm-6" id="sourceStation-city"></p>
 
 						</div>
 
-						<div class="row p-0" id="sourceStation-NB-container">
+						<div class="row p-0 m-0" id="sourceStation-NB-container">
 							<p class="col-sm-5 text-right"  >NorthBound Line(s):</p>
 							<p class="col-sm-6" id="sourceStation-NB"></p>
 						</div>
-						<div class="row p-0" id="sourceStation-NBP-container">
+						<div class="row p-0 m-0" id="sourceStation-NBP-container">
 							<p class="col-sm-5 text-right"  >NorthBound Platform(s):</p>
 							<p class="col-sm-6" id="sourceStation-NBP"></p>
 						</div>
 						  
-						<div class="row p-0" id="sourceStation-SB-container">
+						<div class="row p-0 m-0" id="sourceStation-SB-container">
 							<p class="col-sm-5 text-right" >SouthBound Line(s):</p>
 							<p class="col-sm-6" id="sourceStation-SB"></p>
 						</div>
-						<div class="row p-0" id="sourceStation-SBP-container">
+						<div class="row p-0 m-0" id="sourceStation-SBP-container">
 							<p class="col-sm-5 text-right" >SouthBound Platform(s):</p>
 							<p class="col-sm-6" id="sourceStation-SBP"></p>
 						</div>
@@ -149,6 +149,10 @@
 
 
 	</div>
+	<div class="container" style="margin-top:2em">
+		<div id="map"></div>
+	</div>
+	
 
 
 	<!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
@@ -160,255 +164,20 @@
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 	<script src="jquery.countdown.min.js"></script>
 
+	
+	<script src="index.js"></script>
+
 
 	<script>
+      
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDtsHiurS8BTF0NFDRoV8xV2L1yxbF9lvk">
+    </script>
 
 
-		let data = {'sourceStation':undefined,'destStation':undefined}
-		let autoUpdatingTransit = false;
-		let stations = []
-
-
-
-
-		
-
-
-		function serverJSONRequest(url, type, callback){
-			$.ajax({
-		        url: url,
-		        type: type,
-		        dataType: 'json', 
-		        success: callback
-		    });
-		}
-		function parseRouteArray(routes){
-			if(routes === undefined){
-				return ""
-			}
-			let str = ""
-			for(route of routes){
-				str += route.substring(6) + ", ";
-			}
-
-			return str.substring(0,str.length-2);
-		}
-		function parsePlatformArray(platforms){
-			if(platforms === undefined){
-				return ""
-			}
-			let str = ""
-			for(platform of platforms){
-				str += platform + ", ";
-			}
-
-			return str.substring(0,str.length-2);
-		}
-
-
-
-		function getTransitInfo(){
-			if(!autoUpdatingTransit){
-				autoUpdatingTransit = true;
-				window.setInterval(getTransitInfo, 30000);
-			}
-			serverJSONRequest('/trips?source='+data.sourceStation +'&dest='+data.destStation,'GET',function(res){
-
-				console.log(res);
-
-				let transitContentContainer = $("#transitContentContainer");
-				transitContentContainer.html("")
-
-				$("#destStationTransitHeader").html(data.destStation);
-
-				$("#sourceStationTransitHeader").html(data.sourceStation);
-
-
-				transitContentContainer.show();
-				$("#transitHeader").show();
-
-				
-				let trips = res.schedule.request.trip;
-				let first = true;
-				let departureTime;
-				for(trip of trips){
-
-					let tripElement = '<div class="row m-0 p-2 pb-3 border-top ">'
-							
-					tripElement += 	'<div class="col-5"><h5>' + trip["@origTimeMin"] + '</h5><p>$' + trip["@fare"] + '</p><p class="font-italic small">' + trip["@tripTime"] + ' mins</p></div>'
-					//legs
-					tripElement += '<div class="col-7">' 
-					if(first){
-						first = false;
-
-						departureTime = trip["@origTimeMin"]
-						if(departureTime.indexOf("PM") > 0){
-							departureTime = (Number(departureTime.substring(0,2)) + 12) + departureTime.substring(2,5)
-						}
-						else{
-							departureTime = departureTime.substring(0,5)
-						}
-						departureTime = trip["@origTimeDate"] + " " + departureTime;
-
-						let departureDate = new Date(departureTime);
-						let currentDate = new Date()
-						let diffM = Math.floor((departureDate - currentDate)/60000);
-
-						
-
-
-						tripElement += '<p class="text-danger">departs in <span id="clock">' + diffM + '</span></p>' 
-					}
-
-					tripElement += '<p >' + trip["@origin"] +'  :  ' + trip["@origTimeMin"]+'</p>' 
-					for(legPiece of trip.leg){
-						
-						tripElement += '<p>' + legPiece["@destination"] +'  :  ' + legPiece["@destTimeMin"]+ '</p>' 
-					}
-
-
-					tripElement += '</div>'
-
-					tripElement += '</div>'
-					transitContentContainer.append(tripElement)
-					$('span#clock').countdown(departureTime,function(event) {
-					    $(this).html(event.strftime('%H:%M:%S'));
-					  });
-
-				}
-
-
-
-				
-
-			});
-		}
-
-
-		function getSourceStationInfo(){
-			serverJSONRequest('/station?station='+data.sourceStation,'GET',function(res){
-				console.log(res);
-				$("#sourceStationHeader").html(res.name);
-				$("#sourceStation-city").html(res.city);
-				if(res.north_routes.route){
-					$("#sourceStation-NB").html(parseRouteArray(res.north_routes.route));
-					$("#sourceStation-NBP").html(parsePlatformArray(res.north_platforms.platform));
-					$("#sourceStation-NB-container").show();
-					$("#sourceStation-NBP-container").show();
-				}
-				else{
-					$("#sourceStation-NB-container").hide();
-					$("#sourceStation-NBP-container").hide();
-				}
-				if(res.south_routes.route){
-					$("#sourceStation-SB").html(parseRouteArray(res.south_routes.route));
-					$("#sourceStation-SBP").html(parsePlatformArray(res.south_platforms.platform));
-					$("#sourceStation-SB-container").show();
-					$("#sourceStation-SBP-container").show();
-				}
-				else{
-					$("#sourceStation-SB-container").hide();
-					$("#sourceStation-SBP-container").hide();
-				}
-
-
-				$("#sourceStationInfo").show();
-			})
-		}
-
-
-
-		$(document).ready(function() {
-
-
-
-			let timesVisited = localStorage.getItem('timesVisited');
-			timesVisited = timesVisited === undefined?0:Number(timesVisited);
-
-			if(timesVisited > 0){
-				console.log(timesVisited)
-				$("#visitNum").html(timesVisited);
-				$("#visitAlert").show();
-			}
-
-
-			localStorage.setItem('timesVisited',timesVisited+1)
-
-    		
-			serverJSONRequest('/stations','GET',function(res){
-				stations = res
-
-				let sourceList = $('#source-station-list');
-				let destList = $('#dest-station-list');
-
-				for(station of stations){
-					let stationListElement =  '<a class="list-group-item list-group-item-action" data-toggle="list" abbr='+ station.abbr+' href> ' + station.name +'</a>';
-					sourceList.append(stationListElement);
-					destList.append(stationListElement);
-				}
-
-				//user selected a source station
-				$('#source-station-list a').on('click', function (e) {
-				  e.preventDefault()
-				  if(data.sourceStation !== undefined){
-				  		$('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').removeClass('disabled');
-
-				  }
-				  data.sourceStation = $(this).attr('abbr')
-				  destList.removeClass('disabledDiv');
-				  $('#dest-station-list a[abbr="' + data.sourceStation+ '"] ').addClass('disabled');
-				  
-				  
-
-
-				  getSourceStationInfo();
-				  
-
-				  if(data.destStation !== undefined){
-				  	getTransitInfo();
-				  }
-
-
-
-				  
-				})
-				$('#dest-station-list a').on('click', function (e) {
-				  e.preventDefault()
-
-				  if(data.destStation !== undefined){
-				  		$('#source-station-list a[abbr="' + data.destStation+ '"] ').removeClass('disabled');
-
-				  }
-				  data.destStation = $(this).attr('abbr');
-
-				  
-
-				  $('#source-station-list a[abbr="' + data.destStation+ '"] ').addClass('disabled');
-
-
-				  getTransitInfo();
-
-				 
-
-
-
-
-				})
-
-
-
-			})
-
-
-
-		});
-
-
-
-
-
-	</script>
-
+    <div style="position:absolute;top:0;right:0">Jackson Wheeler</div>
 
 </body>
+
 </html>
