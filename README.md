@@ -9,14 +9,14 @@ Apache configuration:
 <pre>
 
 
-\<VirtualHost *:80>
+&lt;VirtualHost *:80 &gt;
         ServerName bart.jacksonwheelers.space
         ProxyPreserveHost On
         ProxyPass / http://127.0.0.1:8082/
         ProxyPassReverse / http://127.0.0.1:8082/
         ErrorLog ${APACHE_LOG_DIR}/error.log
         CustomLog ${APACHE_LOG_DIR}/access.log combined
-\</VirtualHost>
+&lt; /VirtualHost &gt;
 
 
 </pre>
